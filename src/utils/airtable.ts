@@ -1,20 +1,21 @@
 import airtable from 'airtable';
-import { BackupEvent } from '../types';
+import { BackupConfig } from '../types';
 import { fetchTables } from './fetchTables';
 import { logger } from './logging';
 
-export const fetchDataFromAirtable = async (event: BackupEvent, tableSpec: string) => {
+export const fetchDataFromAirtable = async (config: BackupConfig) => {
+  const tableSpec = config.AIRTABLE_TABLES
   logger.info(`Begin fetching tables from airtable. Making request with tableSpec = ${tableSpec}.`)
   airtable.configure({
     endpointUrl: 'https://api.airtable.com',
     apiKey: process.env.AIRTABLE_TOKEN,
   });
 
-  const base = airtable.base(event.AIRTABLE_BASE);
+  const base = airtable.base(config.AIRTABLE_BASE);
   // store all tables
   let tableNames: string[]
   if (tableSpec == '*') {
-    const tablesFetched = await fetchTables({apiUrl: airtable.endpointUrl, baseId: event.AIRTABLE_BASE, apiKey: airtable.apiKey})
+    const tablesFetched = await fetchTables({apiUrl: airtable.endpointUrl, baseId: config.AIRTABLE_BASE, apiKey: airtable.apiKey})
     try{
       tableNames = tablesFetched['tables'].map((t: {name: string}) => {return t.name})
     }
@@ -35,11 +36,10 @@ export const fetchDataFromAirtable = async (event: BackupEvent, tableSpec: strin
         jsonRecords[table] = (records.map((record) => record._rawJson));
       });
     } catch (e) {
-      const msg = `Can't find Airtable table ${table} with provided base ${event.AIRTABLE_BASE}. Original error: ${e}`
+      const msg = `Can't find Airtable table ${table} with provided base ${config.AIRTABLE_BASE}. Original error: ${e}`
       logger.error(msg)
       throw new Error(msg);
     }
   }
-  logger.info('Successfully retrieved table data from airtable.')
   return jsonRecords;
 };

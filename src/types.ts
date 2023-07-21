@@ -2,7 +2,7 @@ import {z} from 'zod'
 const storageClasses = ["STANDARD", "REDUCED_REDUNDANCY", "STANDARD_IA", "ONEZONE_IA", "INTELLIGENT_TIERING", "GLACIER", "DEEP_ARCHIVE"] as const;
 type StorageClass = typeof storageClasses[number]
 
-export type BackupEvent = {
+export type BackupConfig = {
     AIRTABLE_TOKEN: string
     AIRTABLE_BASE: string
     AIRTABLE_TABLES: string
@@ -12,7 +12,7 @@ export type BackupEvent = {
     LOCAL_DIRECTORY: string
 }
 
-export const zBackupEvent = z.object({
+export const zBackupConfig = z.object({
     AIRTABLE_TOKEN: z.string(),
     AIRTABLE_BASE: z.string(),
     AIRTABLE_TABLES: z.string(),
@@ -20,4 +20,4 @@ export const zBackupEvent = z.object({
     PREFIX: z.string(),
     STORAGE_CLASS: z.string(),
     LOCAL_DIRECTORY: z.string()
-}) satisfies z.ZodType<BackupEvent>
+}) satisfies z.ZodType<BackupConfig>

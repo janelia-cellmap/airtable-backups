@@ -1,12 +1,12 @@
-import { BackupEvent } from '../types';
-import { fetchDataFromAirtable } from '../utils/airtableParser';
-import { saveToS3, saveToLocal } from '../utils/backup';
+import { BackupConfig } from '../types';
+import { fetchDataFromAirtable } from '../utils/airtable';
+import { saveToS3, saveToLocal } from '../utils/store';
 import { Handler } from 'aws-lambda';
 
-export const handler: Handler = async (event: BackupEvent, context, callback) => {
-  const airtableContent = await fetchDataFromAirtable(event, event.AIRTABLE_TABLES);
+export const handler: Handler = async (event: BackupConfig, context, callback) => {
+  const airtableContent = await fetchDataFromAirtable(event);
   try {
-    const response = await uploadToS3(event, airtableContent);
+    const response = await saveToS3({bucket: event.S3_BUCKET, data: airtableContent, prefix: });
 
     try {
       const {

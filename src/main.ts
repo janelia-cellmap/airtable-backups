@@ -1,21 +1,22 @@
 import { handler } from "./functions/makeAirtableBackup"
 import { zBackupEvent } from "./types"
-import { fetchDataFromAirtable } from "./utils/airtableParser"
-import { saveToLocal, saveToS3 } from "./utils/backup"
+import { fetchDataFromAirtable } from "./utils/airtable"
+import { nameFile, saveToLocal, saveToS3 } from "./utils/store"
 import {format} from "date-fns"
 import { logger } from "./utils/logging"
 
 require('dotenv').config()
 
 const main = async () => {
-    const event = zBackupEvent.parse(process.env)
-    const airtableContent = await fetchDataFromAirtable(event, event.AIRTABLE_TABLES);
-    const backupName = event.PREFIX + '/' + format(new Date(), 'yyyy_MM_dd_HH-mm-ss') + '.json';
-    const s3Uri = `${event.S3_BUCKET}/${backupName}`
-    const localUri = `${event.LOCAL_DIRECTORY}/${backupName}`
+    const config = zBackupEvent.parse(process.env)
+    const airtableContent = await fetchDataFromAirtable(config);
+    logger.info('Successfully retrieved table data from airtable.')
+    const name = nameFile(config.prefix)
+    const s3Uri = `${config.S3_BUCKET}/${name}`
+    const localUri = `${config.LOCAL_DIRECTORY}/${name}`
     logger.info(`Begin saving data to ...${s3Uri}`)
     try {
-        const s3Response = await saveToS3({bucket: event.S3_BUCKET, prefix: backupName}, airtableContent);
+        const s3Response = await saveToS3({bucket: config.S3_BUCKET, key: name, data: airtableContent});
         logger.info(`Successfully saved data to ${s3Uri}`)
     }
     catch (err) {
@@ -23,7 +24,7 @@ const main = async () => {
     }
     logger.info(`Begin saving data to ${localUri}...`)
     try {
-        const localResponse = await saveToLocal({fname: localUri}, airtableContent)
+        const localResponse = await saveToLocal({fname: localUri, data: airtableContent})
         logger.info(`Successfully saved data to ${localUri}.`)
     }
     catch (err)
