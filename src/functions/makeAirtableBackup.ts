@@ -1,19 +1,12 @@
-import Epsagon from 'epsagon';
+import { BackupEvent } from '../types';
 import { fetchDataFromAirtable } from '../utils/airtableParser';
-import { uploadBackup } from '../utils/backup';
+import { saveToS3, saveToLocal } from '../utils/backup';
+import { Handler } from 'aws-lambda';
 
-export const handler = async (event, context, callback) => {
-  if (!Object.prototype.hasOwnProperty.call(event, 'AIRTABLE_BASE') || !Object.hasOwnProperty.call(event, 'AIRTABLE_TABLES') || !Object.hasOwnProperty.call(event, 'S3_DIRECTORY')) {
-    const err = Error(`Can't access to AIRTABLE_BASE or AIRTABLE_TABLES or S3_DIRECTORY in the event variable`);
-    Epsagon.setError(err);
-    throw err;
-  }
-
-  const tables = event['AIRTABLE_TABLES'].split(';');
-  const airtableContent = await fetchDataFromAirtable(event, tables);
-
+export const handler: Handler = async (event: BackupEvent, context, callback) => {
+  const airtableContent = await fetchDataFromAirtable(event, event.AIRTABLE_TABLES);
   try {
-    const response = await uploadBackup(event, airtableContent);
+    const response = await uploadToS3(event, airtableContent);
 
     try {
       const {
@@ -32,7 +25,6 @@ export const handler = async (event, context, callback) => {
 
     } catch (e) {
       console.error(e);
-      Epsagon.setError(e);
 
       return {
         statusCode: 500,
@@ -44,7 +36,6 @@ export const handler = async (event, context, callback) => {
     }
   } catch (e) {
     console.error(e);
-    Epsagon.setError(e);
 
     return {
       statusCode: 500,

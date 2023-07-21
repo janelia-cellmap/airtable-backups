@@ -101,6 +101,3 @@ coverage/
 # XXX Feel free to track development/test/staging files if you wish so, we track .env.test to simplify the project's configuration (and because the API key stored in it isn't sensitive to us), but you shouldn't
 .env*
 !.env.test
-
-# Epsagon generated files
-epsagon_handlers/

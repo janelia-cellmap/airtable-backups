@@ -10,12 +10,5 @@
   },
   "rules": {
   },
-  "overrides": [
-    {
-      "excludedFiles": "/epsagon_handlers/*.js",
-      "rules": {
-        "no-multiple-empty-lines": "off"
-      }
-    }
-  ]
+  "overrides": []
 }

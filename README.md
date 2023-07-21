@@ -33,7 +33,6 @@ A **demo of this tool** has been published on **[BuiltOnAir podcast](https://bui
 - [Airtable - In depth](#airtable---in-depth)
   * [A word of caution about Airtable API Key](#a-word-of-caution-about-airtable-api-key)
   * [We leaked our own Airtable API Key!](#we-leaked-our-own-airtable-api-key)
-- [Error monitoring with Epsagon](#error-monitoring-with-epsagon)
 - [Logs](#logs)
 - [Test](#test)
 - [Release](#release)
@@ -201,22 +200,6 @@ A more elegant solution would have been to not use environment variables to stor
 
 ---
 
-## Error monitoring with Epsagon
-
-We use Epsagon in this boilerplate to monitor errors and lambda invoke. It's very handy for faster debugging.
-
-You can set up your own credentials [in serverless.yml](./serverless.yml):
-```yaml
-custom:
-  epsagon:
-    token: '' # TODO Set your Epsagon token - Won't be applied if not provided
-```
-
-This is completely optional and opt-in. You're opt-out by default.
-
-> If you decide to use it, make sure to configure Epasagon with Slack (or similar) to be notified about staging/production errors.
-
----
 
 ## Logs
 
@@ -269,8 +252,6 @@ Same thing if the airtable token is incorrect. It makes it harder to debug a mis
 ### My deployment worked but no file is added to S3, AKA "I don't know what's happening on AWS"
 
 > Make sure to first test your backup configuration with a **fast rate**, like `rate: rate(2 minutes)`
-
-[Watch quick video about how to debug using Epsagon](https://youtu.be/KYdIS82lwlI)
 
 Always use a fast rate when testing things out, that way you have a fast feedback about what's working or not. 
 Don't use `rate: rate(1 day)` before trying your configuration on AWS first, for instance.
