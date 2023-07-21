@@ -1,5 +1,5 @@
 import { handler } from "./functions/makeAirtableBackup"
-import { zBackupEvent } from "./types"
+import { zBackupConfig } from "./types"
 import { fetchDataFromAirtable } from "./utils/airtable"
 import { nameFile, saveToLocal, saveToS3 } from "./utils/store"
 import {format} from "date-fns"
@@ -8,10 +8,10 @@ import { logger } from "./utils/logging"
 require('dotenv').config()
 
 const main = async () => {
-    const config = zBackupEvent.parse(process.env)
+    const config = zBackupConfig.parse(process.env)
     const airtableContent = await fetchDataFromAirtable(config);
     logger.info('Successfully retrieved table data from airtable.')
-    const name = nameFile(config.prefix)
+    const name = nameFile(config.PREFIX)
     const s3Uri = `${config.S3_BUCKET}/${name}`
     const localUri = `${config.LOCAL_DIRECTORY}/${name}`
     logger.info(`Begin saving data to ...${s3Uri}`)

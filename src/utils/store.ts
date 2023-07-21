@@ -21,7 +21,7 @@ export const nameFile = (prefix: string) => {
 }
 
 export const saveToLocal = async (args: LocalSaveArgs) => {
-    const result = (await fs.open(args.fname)).write(JSON.stringify(args.data))
+    const result = await fs.writeFile(args.fname, JSON.stringify(args.data))
     logger.info(`Successfully saved to ${args.fname}.`)
     return result
 }
