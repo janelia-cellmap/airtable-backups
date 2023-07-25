@@ -1,8 +1,6 @@
-import { handler } from "./functions/makeAirtableBackup"
 import { zBackupConfig } from "./types"
 import { fetchDataFromAirtable } from "./utils/airtable"
 import { nameFile, saveToLocal, saveToS3 } from "./utils/store"
-import {format} from "date-fns"
 import { logger } from "./utils/logging"
 
 require('dotenv').config()
