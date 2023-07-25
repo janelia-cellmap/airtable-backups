@@ -1,35 +1,12 @@
-import { zBackupConfig } from "./types"
-import { fetchDataFromAirtable } from "./utils/airtable"
-import { nameFile, saveToLocal, saveToS3 } from "./utils/store"
-import { logger } from "./utils/logging"
-
+import { BackupConfig, zBackupConfig } from "./types"
+import { fetchDataFromAirtable } from "./airtable"
+import { nameFile, saveBackups, saveToLocal, saveToS3 } from "./backup"
+import { logger } from "./logging"
 require('dotenv').config()
 
-const main = async () => {
+const main = () => {
     const config = zBackupConfig.parse(process.env)
-    const airtableContent = await fetchDataFromAirtable(config);
-    logger.info('Successfully retrieved table data from airtable.')
-    const name = nameFile(config.PREFIX)
-    const s3Uri = `${config.S3_BUCKET}/${name}`
-    const localUri = `${config.LOCAL_DIRECTORY}/${name}`
-    logger.info(`Begin saving data to ...${s3Uri}`)
-    try {
-        const s3Response = await saveToS3({bucket: config.S3_BUCKET, key: name, data: airtableContent});
-        logger.info(`Successfully saved data to ${s3Uri}`)
-    }
-    catch (err) {
-        logger.error(`Error encountered while saving data to ${s3Uri}: ${err}`)
-    }
-    logger.info(`Begin saving data to ${localUri}...`)
-    try {
-        const localResponse = await saveToLocal({fname: localUri, data: airtableContent})
-        logger.info(`Successfully saved data to ${localUri}.`)
-    }
-    catch (err)
-    {
-        logger.error(`Error encountered while saving data to ${localUri}: ${err}`)
-    }
-    logger.info('Finished backing up airtable content.')
+    saveBackups(config)
 }
 
-main().then(console.dir)
+main()

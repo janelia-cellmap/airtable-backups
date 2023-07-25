@@ -3,6 +3,8 @@ import {z} from 'zod'
 import { logger } from "./logging";
 import fs from "fs/promises"
 import { format } from "date-fns";
+import { BackupConfig } from "./types";
+import { fetchDataFromAirtable } from "./airtable";
 
 type LocalSaveArgs = {
   fname: string
@@ -55,3 +57,29 @@ export const saveToS3 = async (args: S3SaveArgs) => {
       },
     };
 };
+
+export const saveBackups = async (config: BackupConfig) => {    
+  const airtableContent = await fetchDataFromAirtable(config);
+  logger.info('Successfully retrieved table data from airtable.')
+  const name = nameFile(config.PREFIX)
+  const s3Uri = `${config.S3_BUCKET}/${name}`
+  const localUri = `${config.LOCAL_DIRECTORY}/${name}`
+  logger.info(`Begin saving data to ...${s3Uri}`)
+  try {
+      const s3Response = await saveToS3({bucket: config.S3_BUCKET, key: name, data: airtableContent});
+      logger.info(`Successfully saved data to ${s3Uri}`)
+  }
+  catch (err) {
+      logger.error(`Error encountered while saving data to ${s3Uri}: ${err}`)
+  }
+  logger.info(`Begin saving data to ${localUri}...`)
+  try {
+      const localResponse = await saveToLocal({fname: localUri, data: airtableContent})
+      logger.info(`Successfully saved data to ${localUri}.`)
+  }
+  catch (err)
+  {
+      logger.error(`Error encountered while saving data to ${localUri}: ${err}`)
+  }
+  logger.info('Finished backing up airtable content.')
+}
