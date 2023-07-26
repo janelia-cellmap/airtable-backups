@@ -1,292 +1,83 @@
-<a href="https://unly.org"><img src="https://storage.googleapis.com/unly/images/ICON_UNLY.png" align="right" height="20" alt="Unly logo" title="Unly logo" /></a>
-[![Maintainability](https://api.codeclimate.com/v1/badges/a6ff14f16df566d20013/maintainability)](https://codeclimate.com/github/UnlyEd/airtable-backups-boilerplate/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/a6ff14f16df566d20013/test_coverage)](https://codeclimate.com/github/UnlyEd/airtable-backups-boilerplate/test_coverage)
-[![Known Vulnerabilities](https://snyk.io/test/github/UnlyEd/airtable-backups-boilerplate/badge.svg?targetFile=package.json)](https://snyk.io/test/github/UnlyEd/airtable-backups-boilerplate?targetFile=package.json)
+# Airtable Backups
 
-# Airtable Backup Boilerplate
+Back up all or some of the tables in an Airtable Base on S3 and a local directory. Because this program needs access to a local directory, it should run locally, e.g. from a cron job. See [#cron] for more about that. 
 
-> This project is a boilerplate meant to perform backups of Airtable Bases, at a regular interval (scheduled backups, AKA crons).
-> Those backups are performed by AWS Lambda, and stored in an AWS S3 bucket.
->
-> This project is meant to be hosted on **your own AWS Account**, so you have complete ownership of the project and its configuration.
-> The backups are yours and yours only
-> 
-> In order to get started, please fork this project and follow the ["getting started" guide](#getting-started).
+The output of this program is a `JSON` document containing the contents(schema + fields) of the requested airtable tables.
 
-A **demo of this tool** has been published on **[BuiltOnAir podcast](https://builtonair.com/builtonair-s04e07-ambroise-dhenain-cofounder-of-unly/)**, it's a great resource **to see how it works** beforehand. (*[Starts at 22:50](https://youtu.be/DR7zgsoJkTg?t=1371)*)
+The same `JSON` document is saved to s3 and local storage, with a filename in the following format: `yyyy_MM_dd_HH-mm-ss.json`.
 
----
-
-<!-- toc -->
-
-- [Our recommended AWS configuration](#our-recommended-aws-configuration)
-- [Getting started](#getting-started)
-  * [Local install](#local-install)
-  * [Configuring Airtable](#configuring-airtable)
-    + [Setup Airtable credentials](#setup-airtable-credentials)
-  * [Configuring AWS](#configuring-aws)
-    + [Selecting AWS region](#selecting-aws-region)
-    + [Configuring AWS S3](#configuring-aws-s3)
-  * [Configuring a scheduled backup](#configuring-a-scheduled-backup)
-    + [Testing project locally (mocked data)](#testing-project-locally-mocked-data)
-- [Deploying on AWS](#deploying-on-aws)
-- [Airtable - In depth](#airtable---in-depth)
-  * [A word of caution about Airtable API Key](#a-word-of-caution-about-airtable-api-key)
-  * [We leaked our own Airtable API Key!](#we-leaked-our-own-airtable-api-key)
-- [Logs](#logs)
-- [Test](#test)
-- [Release](#release)
-- [FAQ](#faq)
-  * [`Can't find Airtable table Video trackers with provided base`](#cant-find-airtable-table-video-trackers-with-provided-base)
-  * [My deployment worked but no file is added to S3, AKA "I don't know what's happening on AWS"](#my-deployment-worked-but-no-file-is-added-to-s3-aka-i-dont-know-whats-happening-on-aws)
-- [Vulnerability disclosure](#vulnerability-disclosure)
-- [Contributors and maintainers](#contributors-and-maintainers)
-- [**[ABOUT UNLY]**](#about-unly-)
-<!-- tocstop -->
-
-## Our recommended AWS configuration
-
-> As best practice, this boilerplate comes built-in with different environments (an "environment" is similar to a "stage").
->
-> Each env is completely independent. We recommend having one environment in one dedicated AWS Account as best practice, for complete separation of concerns.
-> But, you can also use the same AWS account, it's entirely up to you.
-
-Our environments are specified in `serverless.yml:custom.envs`.
-We use the same "profile" for both staging and production envs in this boilerplate, for the sake of simplicity.
-
-But you can use different AWS profile if you wish (that's what we do in our internal fork of this boilerplate).
-
-If you're not familiar with AWS profiles and alike, [I recommend reading this](https://forum.serverless.com/t/restructuring-aws-proper-way-to-configure-aws-accounts-organisations-and-profiles-when-using-serverless/5009).
-
-P.S: Because we use AWS profiles, we don't directly manipulate AWS SECRET/API keys, they're stored in our `~/.aws/` folder and we don't have to care about them.
-You may prefer to manage your AWS credentials with environment variables.
-
----
-
-## Getting started
-
-> First, fork this project, or clone it.
+This project is modified from [airtable-backups-boilerplate](https://github.com/UnlyEd/airtable-backups-boilerplate)
 
 ### Local install
+Clone the repo, then
 
 ```bash
-nvm use # Select the same node version as the one that'll be used by AWS (see .nvmrc) (optional)
-yarn install # Install node modules
+npm install -g
 ```
+Using a global installation (the `-g` flag) is optional. It makes a cron job marginally simpler.
 
-### Configuring Airtable
+### Generating backups
 
-#### Setup Airtable credentials
+run 
 
-> First, you need to find your Airtable API KEY, you can find it in your [Airtable account](https://airtable.com/account), or in the API documentation of your Airtable Base. 
+```
+airtable-backup
+```
+From the command line.
 
-Because your Airtable API Key must not be tracked by git, it's meant to be added in a non-tracked file, that depends on the environment you're deploying to:
+### Configuration
 
-- Staging environment: `./.env.staging`
-- Production environment: `./.env.production`
+#### Environment variables
 
-Create both files and add your Airtable API key as `AIRTABLE_TOKEN` (see [.env.test](./.env.test) as example)
+This program is configured via environment variables, either directly or via a `.env` file. [This type](./src/types.ts#L5) expresses the expected structure of the environment variables (i.e., a handful of strings assigned to variables with capitalized names).
 
-> See [Airtable - In depth](#airtable---in-depth) section to learn more about our Airtable's recommendations
+The `AIRTABLE_BASE` variable in `.env` is the name of the airtable base that should be backed up. You can find that name by going to https://airtable.com/api, selecting your base, and looking for the base id.
 
-### Configuring AWS
+The `AIRTABLE_TABLES` variable in `.env` is either the string `*`, which means "all tables", or a ";" delimited list of table names, which specifies exactly which tables you want to back up.
 
-#### Selecting AWS region
-> First, you need to know which region you want to use. This region will be used for storing your backups (S3) and that's also where your Lambda are gonna be running.
 
-By default, the region is `Ireland`, but you can either change the default value in [serverless config](./serverless.yml), or customise the [`deploy` script](package.json) to match the region you want.
- 
-#### Configuring AWS S3
+#### Airtable credentials
 
-##### Creating AWS S3 Bucket
-> You need to **manually** create a bucket [in AWS Console](https://console.aws.amazon.com/s3/home) _(PR welcome to automate this process!)_
+First, you need to find your Airtable API KEY, you can find it in your [Airtable account](https://airtable.com/account), or in the API documentation of your Airtable Base. Assign `AIRTABLE_TOKEN` in `.env` to the value of your airtable api key. As per best practices, the `.env` file should never be checked into version control!
 
-The name of the bucket is [dynamic by default](./serverless.yml), `bucket: ${self:service}-${self:custom.environment}`, which will resolve to either `airtable-backups-demo-staging` or `airtable-backups-demo-production` in our case.
+### Storage
 
-##### Selecting AWS S3 Storage Class (optional)
+##### Local
 
-Selecting the right storage class is a bit complex and won't be covered in this short tutorial. We recommend reading the [official documentation](https://aws.amazon.com/en/s3/storage-classes/).
+You need to create a directory for local backups, e.g. `/User/foo/home/airtable/`. Assign the absolute path to this directory to the `LOCAL_DIRECTORY` variable in `.env`. 
 
-The storage class we recommend for storing backups is **`STANDARD_IA`** (AKA "Standard Infrequent Access"), because it's the best compromise in terms of cost, accessibility, backup redundancy (multi zones), etc. 
+Backups will be stored in a subdirectory within this directory. The `PREFIX` variable in `.env` determines the name of this sub-directory.
 
-But, each business may have its own preferences. Also, you can optimize cost using automated lifecycle.
+For example, if `LOCAL_DIRECTORY` is `/foo/bar`, and `PREFIX` is `backups`, backups will be saved in `/foo/bar/backups`.
 
-##### Configuring AWS S3 Bucket's lifecycle (optional)
+##### S3
 
-You can configure a lifecycle for your S3 bucket. (you can still configure/change this later on if you change your mind).
+You need to create a bucket before this tool can write to S3. Use the [AWS Console](https://console.aws.amazon.com/s3/home) or the programmatic method of your choice.
 
-- Here is a good tutorial on how to delete a backup after X days, [see this advanced tutorial](https://www.joe0.com/2017/05/24/amazon-s3-how-to-delete-files-older-than-x-days/)
-- You could also optimise cost by automatically moving backups that are older than 30 days to another class storage, such as "Glacier", etc.
-- Here is official documentation [here](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/create-lifecycle.html)
+Assign the name of this bucket to the `S3_BUCKET` variable in `.env`.
 
-> We personally use lifecycle to delete files older than 180 days, so that our usage of AWS S3 doesn't increase indefinitely.
+Backups will be stored with a prefix appended to their filename. The `PREFIX` variable in `.env` determines the value of this prefix.
+
+For example,  if `S3_BUCKET` is `my-cool-bucket`, and `prefix` is `backups`, then backups will be saved to `s3://my-cool-bucket/backups`. Unless you specify your AWS credentials with environment variables, you must have your S3 credentials available in the normal location. See the AWS documentation for more.
+
+##### Selecting AWS S3 Storage Class
+
+S3 objects can be stored in a variety of storage classes. See the [official documentation](https://aws.amazon.com/en/s3/storage-classes/) for details.
+
+The storage class I recommend for storing backups is `STANDARD_IA` (AKA "Standard Infrequent Access"). It's a good compromise in terms of cost, accessibility, backup redundancy (multi zones), etc. 
+
+Set the `S3_STORAGE_CLASS` value in `.env` to your desired storage class. The default is `STANDARD_IA`.
 
 ### Configuring a scheduled backup
 
-Finally, after going through all the previous steps, you can now finally configure a scheduled backup for an Airtable base!
+This program can be used with [`cron`](https://en.wikipedia.org/wiki/Cron) to run regular backups from a machine running Linux. An example entry in `crontab` for running a backup every day at midnight and logging errors / status to a logfile might look like this: 
 
-The configuration is done in [serverless config](./serverless.yml), at `custom.airtableBackups.events`:
+`0 0 * * * exec /usr/bin/zsh /path/to/repo/airtable-backups/src/cron.sh >> /var/log/airtable-backup.log 2>&1`
 
-```yaml
-  airtableBackups: # The same lambda is used to configure all backups (each backup is a distinct "scheduled event", AKA "cron")
-    handler: src/functions/makeAirtableBackup.handler
-    events:
-      - schedule:
-          description: "Airtable backups for the 'Airtable backups boilerplate' base (demo)"
-          rate: rate(5 minutes) # TODO Set your own rate : https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
-          enabled: true
-          input:
-            AIRTABLE_BASE: "app7nfLmoVHva1Vdv" # TODO Set your own base id
-            AIRTABLE_TABLES: "Video tracker;Staff directory;Agencies;Agency contacts;Scenes;Shots;Locations;Props and equipment" # TODO Set your table names
-            S3_DIRECTORY: "airtableBackupsBoilerplate/" # TODO Set the s3 sub-directory you want the backups to be stored in
-            STORAGE_CLASS: 'STANDARD_IA' # Set the storage class to use within those values: "STANDARD"|"REDUCED_REDUNDANCY"|"STANDARD_IA"|"ONEZONE_IA"|"INTELLIGENT_TIERING"|"GLACIER"|"DEEP_ARCHIVE" - See https://aws.amazon.com/en/s3/storage-classes/
-```
+Note that the log file (e.g., `/var/log/airtable-backup.log`) must be created before running this, with the correct permissions to enable writing.`
 
-The same AWS Lambda (`airtableBackups`) is used to perform all backups. You can schedule several events if you wish, each with its own base, tables, S3 directory and storage class strategy.
+For me it was helpful to write a standalone [shell script](./src/cron.sh) for `cron`.
 
-#### Testing project locally (mocked data)
+## Airtable - Security Concerns
 
-> We will store a backup in your AWS S3 bucket for real, but is triggered locally (not on AWS Lambda)
-
-```bash
-yarn invoke:airtableBackups
-```
-
-**Note that this script uses our [mocked data](mocks/test-event.json)**, and not the ones that have been defined in serverless.yml
-
-The output should be something like this :
-```
-Backup "airtableBackupsBoilerplate/2020_01_11_17-47-04.json" successfully uploaded to bucket "airtable-backups-demo-staging" (using storage class: "STANDARD_IA")
-{
-    "statusCode": 200,
-    "body": "Successfully created backup"
-}
-```
-
----
-
-## Deploying on AWS
-
-> Before deploying, search for all `TODO` in the code source and resolve them. (serverless.yml)
->
-> They're mostly there to highlight changes that you should perform before deploying this project on AWS.
-
-```bash
-yarn deploy # Deploy on staging environment
-NODE_ENV=production yarn deploy # Deploys to production
-```
-
----
-
-## Airtable - In depth
-
-### A word of caution about Airtable API Key
-
-> Airtable API Key security **sucks**, in our opinion.
-
-They use the same API key for all bases, and you can only have one. 
-Therefore, if you API Key leaks, you'll have to invalidate it in your [Airtable account](https://airtable.com/account), which will break all API integration for all bases at once.
-
-A better way for them to secure API keys would have been to allow us to create more API keys (and name them), so we could have used one different API key per base and per environment.
-This would have been better in case we need to invalidate one key, it'd have a much smaller damage radius. But unfortunately, that's not the case.
-
-> Be extra cautious about not leaking your Airtable API Key anywhere (like on github, for instance)
-
-### We leaked our own Airtable API Key!
-
-Note that for the sake of simplicity, we leaked our own Airtable API Key in the `.env.test` and `mocks/test-event.json` files, but we created a separated Airtable Account unrelated to our business, meant to be used by this boilerplate only.
-
-A more elegant solution would have been to not use environment variables to store the `AIRTABLE_TOKEN`, such as KMS or similar.
-
----
-
-
-## Logs
-
-- **airtableBackups** function:
-```bash
-yarn logs:airtableBackups
-```
-
-- **status** function:
-```bash
-yarn logs:status
-```
-
-Similar to reading the logs from the AWS Console
-
----
-
-## Test
-
-```
-yarn test
-yarn test:coverage
-```
-
----
-
-## Release
-
-Will prompt version to release, run tests, commit/push commit + tag
-
-```
-yarn release
-```
-
-
-> Check the [./package.json](./package.json) file to see what other utility scripts are available
-
---
-
-## FAQ
-
-### `Can't find Airtable table Video trackers with provided base`
-
-> Make sure all your `AIRTABLE_TOKEN`, `AIRTABLE_BASE` and `AIRTABLE_TABLES` are correct. 
-
-If the base doesn't exist or if the table doesn't exist within that base then you'll get this error.
-
-Same thing if the airtable token is incorrect. It makes it harder to debug a misconfiguration, but that's how Airtable's API works...
-
-### My deployment worked but no file is added to S3, AKA "I don't know what's happening on AWS"
-
-> Make sure to first test your backup configuration with a **fast rate**, like `rate: rate(2 minutes)`
-
-Always use a fast rate when testing things out, that way you have a fast feedback about what's working or not. 
-Don't use `rate: rate(1 day)` before trying your configuration on AWS first, for instance.
-
-**Also, when you deploy your scheduled backup, AWS Lambda won't be triggered immediately. It will actually wait before triggering for the first time.**
-
-> i.e: `rate: rate(1 day)` will not be triggered before 24h after deploying
-
-# Vulnerability disclosure
-
-[See our policy](https://github.com/UnlyEd/Unly).
-
----
-
-# Contributors and maintainers
-
-This project is being maintained by:
-- [Unly] Ambroise Dhenain ([Vadorequest](https://github.com/vadorequest)) **(active)**
-- [Contributor] Hugo Martin ([Demmonius](https://github.com/Demmonius)) **(active)**
-
----
-
-# **[ABOUT UNLY]** <a href="https://unly.org"><img src="https://storage.googleapis.com/unly/images/ICON_UNLY.png" height="40" align="right" alt="Unly logo" title="Unly logo" /></a>
-
-> [Unly](https://unly.org) is a socially responsible company, fighting inequality and facilitating access to higher education. 
-> Unly is committed to making education more inclusive, through responsible funding for students. 
-
-We provide technological solutions to help students find the necessary funding for their studies. 
-
-We proudly participate in many TechForGood initiatives. To support and learn more about our actions to make education accessible, visit : 
-- https://twitter.com/UnlyEd
-- https://www.facebook.com/UnlyEd/
-- https://www.linkedin.com/company/unly
-- [Interested to work with us?](https://jobs.zenploy.io/unly/about)
-
-Tech tips and tricks from our CTO on our [Medium page](https://medium.com/unly-org/tech/home)!
-
-#TECHFORGOOD #EDUCATIONFORALL
+Be extra cautious about not leaking your Airtable API Key anywhere (like on github, for instance)

@@ -1,31 +1,8 @@
 {
-  "name": "@unly/airtable-backups-boilerplate",
+  "name": "@janelia-cellmap/airtable-backups",
   "version": "1.0.0",
-  "description": "Configurable automated backups for Airtable meant to be self-hosted, powered by AWS Lambda/S3",
+  "description": "Automated local and remote (aws s3) backups for airtable",
   "private": true,
-  "scripts": {
-    "sls:dotenv": "NODE_ENV=${NODE_ENV:-development}; sls dotenv",
-    "sls:login": "sls login",
-    "sls:check": "NODE_ENV=${NODE_ENV:-development}; sls print",
-    "sls:remove": "NODE_ENV=${NODE_ENV:-staging} sls remove",
-    "sls:info": "NODE_ENV=${NODE_ENV:-staging} sls info",
-    "start": "NODE_ENV=${NODE_ENV:-development}; sls offline start",
-    "invoke:airtableBackups": "NODE_ENV=${NODE_ENV:-staging} yarn sls:dotenv && NODE_ENV=${NODE_ENV:-staging} sls invoke local -f airtableBackups -p mocks/test-event.json",
-    "deploy": "NODE_ENV=${NODE_ENV:-staging} sls deploy",
-    "logs:airtableBackups": "NODE_ENV=${NODE_ENV:-staging} sls logs -f airtableBackups --tail",
-    "logs:status": "NODE_ENV=${NODE_ENV:-staging}; sls logs -f status -s $NODE_ENV --startTime 10m",
-    "preversion": "yarn run test:once",
-    "postversion": "git push && git push --tags",
-    "release": "yarn bump --tag",
-    "doc:toc": "yarn markdown-toc --maxdepth 4 -i README.md",
-    "sync:fork": "BRANCH=${BRANCH:-master}; git pull --rebase git@github.com:UnlyEd/airtable-backups-boilerplate.git ${BRANCH}",
-    "sync:fork:merge": "BRANCH=${BRANCH:-master}; git pull git@github.com:UnlyEd/airtable-backups-boilerplate.git ${BRANCH}",
-    "test": "NODE_ENV=test yarn sls:dotenv && serverless-bundle test --watch",
-    "test:serie": "NODE_ENV=test yarn sls:dotenv && serverless-bundle test --watch --runInBand",
-    "test:once": "NODE_ENV=test yarn sls:dotenv && serverless-bundle test",
-    "test:coverage": "NODE_ENV=test yarn sls:dotenv && serverless-bundle test --coverage",
-    "test:coverage:serie": "NODE_ENV=test yarn sls:dotenv && serverless-bundle test --coverage --runInBand"
-  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.374.0",
     "airtable": "0.12.1",
@@ -35,7 +12,5 @@
     "ts-node": "^10.9.1",
     "zod": "^3.21.4"
   },
-  "devDependencies": {
-    "@types/node-cron": "^3.0.8"
-  }
+  "bin": {"airtable-backup" : "src/airtable-backup.ts"}
 }

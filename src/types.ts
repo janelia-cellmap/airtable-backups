@@ -8,7 +8,7 @@ export type BackupConfig = {
     AIRTABLE_TABLES: string
     S3_BUCKET: string
     PREFIX: string
-    STORAGE_CLASS: string
+    S3_STORAGE_CLASS: string
     LOCAL_DIRECTORY: string
 }
 
@@ -18,6 +18,6 @@ export const zBackupConfig = z.object({
     AIRTABLE_TABLES: z.string(),
     S3_BUCKET: z.string(),
     PREFIX: z.string(),
-    STORAGE_CLASS: z.string(),
+    S3_STORAGE_CLASS: z.string(),
     LOCAL_DIRECTORY: z.string()
 }) satisfies z.ZodType<BackupConfig>

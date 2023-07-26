@@ -66,7 +66,7 @@ export const saveBackups = async (config: BackupConfig) => {
   const localUri = `${config.LOCAL_DIRECTORY}/${name}`
   logger.info(`Begin saving data to ...${s3Uri}`)
   try {
-      const s3Response = await saveToS3({bucket: config.S3_BUCKET, key: name, data: airtableContent});
+      const s3Response = await saveToS3({bucket: config.S3_BUCKET, key: name, data: airtableContent, storageClass: config.S3_STORAGE_CLASS});
       logger.info(`Successfully saved data to ${s3Uri}`)
   }
   catch (err) {
