@@ -1,6 +1,6 @@
 # Airtable Backups
 
-Back up all or some of the tables in an Airtable Base on S3 and a local directory. Because this program needs access to a local directory, it should run locally, e.g. from a cron job. See [#cron] for more about that. 
+Back up all or some of the tables in an Airtable Base on S3 and a local directory. Because this program needs access to a local directory, it should run locally, e.g. from a [cron job](#configuring-a-scheduled-backup). 
 
 The output of this program is a `JSON` document containing the contents(schema + fields) of the requested airtable tables.
 
@@ -29,7 +29,7 @@ From the command line.
 
 #### Environment variables
 
-This program is configured via environment variables, either directly or via a `.env` file. [This type](./src/types.ts#L5) expresses the expected structure of the environment variables (i.e., a handful of strings assigned to variables with capitalized names).
+This program is configured via environment variables, either directly or via a `.env` file. [This type](./src/types.ts#L5) expresses the expected structure of the environment variables (i.e., a handful of strings assigned to variables with capitalized names). The rest of the README will refer to variables in `.env`, but those values can be overriden by specifying environment variables directly.
 
 The `AIRTABLE_BASE` variable in `.env` is the name of the airtable base that should be backed up. You can find that name by going to https://airtable.com/api, selecting your base, and looking for the base id.
 
@@ -60,7 +60,7 @@ Backups will be stored with a prefix appended to their filename. The `PREFIX` va
 
 For example,  if `S3_BUCKET` is `my-cool-bucket`, and `prefix` is `backups`, then backups will be saved to `s3://my-cool-bucket/backups`. Unless you specify your AWS credentials with environment variables, you must have your S3 credentials available in the normal location. See the AWS documentation for more.
 
-##### Selecting AWS S3 Storage Class
+##### S3 Storage Classes
 
 S3 objects can be stored in a variety of storage classes. See the [official documentation](https://aws.amazon.com/en/s3/storage-classes/) for details.
 
